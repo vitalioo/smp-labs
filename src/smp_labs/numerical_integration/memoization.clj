@@ -19,8 +19,8 @@
         h 0.001
         integrator (trapezoid-integral f h)]
     ;; первый вызов
-    (time (println "Memoized trapezoid integral at 100.0:" (integrator 100.0)))
+    (time (println "Memoized trapezoid integral at 10000.0:" (integrator 10000.0)))
     ;; повторные вызовы
     (time
       (dotimes [_ 10]
-        (println "Memoized (cached) trapezoid integral at 100.0:" (integrator 100.0))))))
+        (println "Memoized (cached) trapezoid integral at 10000.0:" (integrator 100.0))))))

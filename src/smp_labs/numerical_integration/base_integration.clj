@@ -16,4 +16,4 @@
         h 0.001
         integrator (trapezoid-integral f h)]
     (time
-      (println "Trapezoid integral of x from 0 to 5:" (integrator 100.0)))))
+      (println "Trapezoid integral of x from 0 to 10000:" (integrator 10000.0)))))

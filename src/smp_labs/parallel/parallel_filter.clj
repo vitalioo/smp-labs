@@ -1,0 +1,42 @@
+(ns smp-labs.parallel.parallel-filter
+  (:gen-class))
+
+(defn partition-by-size [coll size]
+  (lazy-seq
+    (when (seq coll)
+      (cons (take size coll)
+            (partition-by-size (drop size coll) size)))))
+
+(defn parallel-filter [pred coll n-block]
+  (let [parts (partition-by-size coll n-block)
+        futures (map (fn [part]
+                       (future (doall (filter pred part))))
+                     parts)
+        results (map deref futures)]
+    (doall (apply concat results)))) ; ← doall и здесь для чистоты
+
+;; ДЕЙСТВИТЕЛЬНО тяжёлый предикат
+(defn busy-pred [x]
+  (let [limit 20000] ; ~20k итераций на каждый элемент
+    (loop [i 0, acc x]
+      (if (< i limit)
+        (recur (inc i) (bit-xor acc (+ (* i 123) (bit-and acc 65535))))
+        (odd? acc)))))
+
+(defn -main [& args]
+  (let [data (range 0 10000) ; ← меньше данных, но ОЧЕНЬ дорогая ф-я
+        pred busy-pred
+        cores (.availableProcessors (Runtime/getRuntime))
+        n-block (quot (count data) cores)]
+
+    (println "Cores:" cores ", block size:" n-block)
+
+    (println "SEQUENTIAL...")
+    (time
+      (let [res (doall (filter pred data))]
+        (println "Count:" (count res))))
+
+    (println "PARALLEL...")
+    (time
+      (let [res (doall (parallel-filter pred data n-block))]
+        (println "Count:" (count res))))))
