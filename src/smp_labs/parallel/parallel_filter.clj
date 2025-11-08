@@ -13,9 +13,9 @@
                        (future (doall (filter pred part))))
                      parts)
         results (map deref futures)]
-    (doall (apply concat results)))) ; ← doall и здесь для чистоты
+    (doall (apply concat results))))
 
-;; ДЕЙСТВИТЕЛЬНО тяжёлый предикат
+;; тяжёлый предикат
 (defn busy-pred [x]
   (let [limit 20000] ; ~20k итераций на каждый элемент
     (loop [i 0, acc x]
@@ -24,7 +24,7 @@
         (odd? acc)))))
 
 (defn -main [& args]
-  (let [data (range 0 10000) ; ← меньше данных, но ОЧЕНЬ дорогая ф-я
+  (let [data (range 0 100000)
         pred busy-pred
         cores (.availableProcessors (Runtime/getRuntime))
         n-block (quot (count data) cores)]
