@@ -52,5 +52,5 @@
         (println "Count:" (count res))))
 
     (time
-      (let [res (take 100000 (lazy-parallel-filter busy-pred (range) 1000 cores))]
+      (let [res (take 10000 (lazy-parallel-filter busy-pred (range) 1000 cores))]
         (println "Result:" res)))))
