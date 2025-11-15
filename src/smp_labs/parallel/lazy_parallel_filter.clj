@@ -1,41 +1,56 @@
 (ns smp-labs.parallel.lazy-parallel-filter
   (:gen-class))
 
-(defn lazy-parallel-filter [pred coll n-block]
-  (letfn [(process-block [block]
-            (future (doall (filter pred block))))
+(defn lazy-partition [size coll]
+  (lazy-seq
+    (when-let [block (seq (take size coll))]
+      (cons block (lazy-partition size (drop size coll))))))
 
-          (filter-blocks [coll]
-            (lazy-seq
-              (when (seq coll)
-                (let [block (take n-block coll)
-                      future-result (process-block block)
-                      rest-coll (drop n-block coll)]
-                  (concat @future-result
-                          (filter-blocks rest-coll))))))]
-    (filter-blocks coll)))
+(defn lazy-parallel-filter
+  ([pred coll block-size]
+   (let [parallelism (.availableProcessors (Runtime/getRuntime))]
+     (lazy-parallel-filter pred coll block-size parallelism)))
+  ([pred coll block-size parallelism]
+   (let [process-block (fn [block]
+                         (future (doall (filter pred block))))
+         chunks (lazy-partition block-size coll)]
+     (letfn [(fill-buffer [futs chs]
+               (loop [f futs, c chs]
+                 (if (and (< (count f) parallelism) (seq c))
+                   (recur (conj f (process-block (first c))) (rest c))
+                   [f c])))
+             (produce [chunks futs]
+               (lazy-seq
+                 (let [[new-futs new-chunks] (fill-buffer futs chunks)]
+                   (when (seq new-futs)
+                     (let [first-result @(first new-futs)]
+                       (concat first-result
+                               (produce new-chunks (subvec new-futs 1))))))))]
+       (produce chunks [])))))
 
 (defn busy-pred [x]
-  (let [limit 5000]
+  (let [limit 10000]
     (loop [i 0, acc x]
       (if (< i limit)
         (recur (inc i) (bit-xor acc (+ (* i 123) (bit-and acc 65535))))
         (odd? acc)))))
 
 (defn -main [& args]
-  (let [
-        infinite-data (range)
+  (let [data (range 0 100000)
         pred busy-pred
-        n-block 1000
-        ;; запросим первые 40000 элементов (из бесконечной последовательности)
-        n-elements 40000]
+        cores (.availableProcessors (Runtime/getRuntime))
+        block-size (quot (count data) cores)]
 
-    (println "SEQUENTIAL (take" n-elements ")...")
+    (println "SEQUENTIAL...")
     (time
-      (let [res (doall (take n-elements (filter pred infinite-data)))]
+      (let [res (doall (filter pred data))]
         (println "Count:" (count res))))
 
-    (println "LAZY PARALLEL (take" n-elements ")...")
+    (println "LAZY PARALLEL (with bounded parallelism)...")
     (time
-      (let [res (doall (take n-elements (lazy-parallel-filter pred infinite-data n-block)))]
-        (println "Count:" (count res))))))
+      (let [res (doall (lazy-parallel-filter pred data block-size cores))]
+        (println "Count:" (count res))))
+
+    (time
+      (let [res (take 100000 (lazy-parallel-filter busy-pred (range) 1000 cores))]
+        (println "Result:" res)))))

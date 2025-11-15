@@ -9,15 +9,15 @@
 
 (defn parallel-filter [pred coll n-block]
   (let [parts (partition-by-size coll n-block)
-        futures (map (fn [part]
+        futures (doall (map (fn [part]
                        (future (doall (filter pred part))))
-                     parts)
+                     parts))
         results (map deref futures)]
     (doall (apply concat results))))
 
 ;; тяжёлый предикат
 (defn busy-pred [x]
-  (let [limit 20000] ; ~20k итераций на каждый элемент
+  (let [limit 10000] ; ~20k итераций на каждый элемент
     (loop [i 0, acc x]
       (if (< i limit)
         (recur (inc i) (bit-xor acc (+ (* i 123) (bit-and acc 65535))))
