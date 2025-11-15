@@ -3,7 +3,7 @@
 
   Основные функции:
   - `make-var`, `make-const` — создание переменных и констант
-  - `make-and`, `make-or`, `make-not`, `make-implies` — конструкторы операций
+  - `make-and`, `make-or`, `make-not`, `make-implies` `make-xor` — конструкторы операций
   - `substitute [expr var-name value]` — подстановка значения переменной
   - `to-dnf [expr]` — приведение выражения к ДНФ
   Расширение:
