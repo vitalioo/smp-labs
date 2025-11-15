@@ -62,3 +62,12 @@
     ;; Случай 2: ¬(x ∨ y) → ¬x ∧ ¬y
     (is (= (to-dnf (make-not (make-or (make-var "x") (make-var "y"))))
            (make-and (make-not (make-var "x")) (make-not (make-var "y")))))))
+
+;; Тест 7: Исключающее ИЛИ (XOR)
+(deftest test-to-dnf-xor
+  (testing "Исключающее ИЛИ (XOR)"
+    (let [expr (make-xor (make-var "x") (make-var "y"))]
+      (is (= (to-dnf expr)
+             (make-or
+               (make-and (make-var "x") (make-not (make-var "y")))
+               (make-and (make-not (make-var "x")) (make-var "y"))))))))

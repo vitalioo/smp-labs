@@ -28,6 +28,8 @@
 (defn make-implies [a b] [:implies a b])
 ;; Пример: (make-implies (make-var "x") (make-var "y")) → [:implies [:var "x"] [:var "y"]]
 
+(defn make-xor [a b] [:xor a b]) ;; (make-xor (make-var "x") (make-var "y")) → [:xor [:var "x"] [:var "y"]]
+
 ;; ===== 2. Подстановка значения =====
 (defn substitute [expr var-name value]
   (cond
@@ -91,9 +93,20 @@
 (defmethod to-dnf :implies [expr]
   (to-dnf (make-or (make-not (second expr)) (nth expr 2))))
 
+(defmethod to-dnf :xor [expr]
+  (let [a (second expr)
+        b (nth expr 2)]
+    (to-dnf
+      (make-or
+        (make-and a (make-not b))
+        (make-and (make-not a) b)))))
+
 ;; ===== 5. Пример использования в main =====
 (defn -main []
   (let [expr (make-implies (make-var "x") (make-or (make-var "y") (make-var "z")))] ; x -> (y or z) = true -> (y or z) =
     (println "Исходное выражение:" expr)
     (println "После подстановки x=true:" (substitute expr "x" true))
     (println "ДНФ:" (to-dnf expr))))
+  (let [xor-expr (make-xor (make-var "x") (make-var "y"))]
+    (println "XOR выражение:" xor-expr)
+    (println "ДНФ для XOR:" (to-dnf xor-expr)))
